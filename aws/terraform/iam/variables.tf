@@ -8,13 +8,6 @@ variable "environment" {
   type        = string
 }
 
-# Lambda specific variables
-
-variable "data_lake_bucket" {  
-  description = "S3 bucket name"
-  type        = string
-}
-
 locals {
   prefix = "${var.project_name}-${var.environment}"
 }

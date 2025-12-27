@@ -1,27 +1,36 @@
 variable "project_name" {
-  type = string
+  description = "Project name"
+  type        = string
 }
 
 variable "environment" {
-  type = string
+  description = "Environment"
+  type        = string
 }
 
 variable "lambda_arn" {
-  type = string
+  description = "ARN of the Lambda function"
+  type        = string
 }
 
-variable "ecs_cluster_arn" { 
-    type = string 
+variable "ecs_cluster_arn" {
+  description = "ARN of the ECS cluster"
+  type        = string
+  default     = ""
 }
 
-variable "ecs_task_definition_arn" { 
-    type = string 
+variable "ecs_task_definition_arn" {
+  description = "ARN of the ECS task definition"
+  type        = string
+  default     = ""
 }
 
-variable "subnets" { 
-    type = list(string) 
+variable "subnets" {
+  description = "List of subnet IDs"
+  type        = list(string)
 }
 
-variable "security_groups" { 
-    type = list(string) 
+variable "security_groups" {
+  description = "List of security group IDs"
+  type        = list(string)
 }

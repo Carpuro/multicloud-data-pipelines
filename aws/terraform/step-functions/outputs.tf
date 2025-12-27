@@ -1,3 +1,9 @@
 output "state_machine_arn" {
-  value = aws_sfn_state_machine.data_pipeline.arn
+  description = "ARN of the Step Functions state machine"
+  value       = aws_sfn_state_machine.data_pipeline.arn
+}
+
+output "state_machine_name" {
+  description = "Name of the Step Functions state machine"
+  value       = aws_sfn_state_machine.data_pipeline.name
 }

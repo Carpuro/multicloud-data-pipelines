@@ -1,0 +1,10 @@
+# Terraform
+.terraform/
+.terraform.lock.hcl
+*.tfstate
+*.tfstate.*
+terraform.tfvars
+.terraform.tfvars
+
+# Provider binaries
+terraform-provider-aws_v5.100.0_x5.exe
