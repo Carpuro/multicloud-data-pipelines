@@ -1,7 +1,3 @@
-locals {
-  prefix = "${var.project_name}-${var.environment}"
-}
-
 resource "aws_iam_role" "lambda_role" {
   name = "${local.prefix}-ingestion-lambda-role"
 

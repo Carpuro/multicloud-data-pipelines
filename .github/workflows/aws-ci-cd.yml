@@ -1,51 +1,58 @@
-name: AWS CI/CD Pipeline
+name: Terraform AWS Deploy
 
 on:
   push:
-    branches: [ "main" ]
+    branches: [ main ]
+    paths:
+      - 'aws/terraform/**'
+      - 'aws/pipelines/**'
+  pull_request:
+    branches: [ main ]
+  workflow_dispatch:
 
 jobs:
-  deploy:
+  terraform:
+    name: Terraform Plan & Apply
     runs-on: ubuntu-latest
-
+    
     steps:
-    - name: Checkout code
-      uses: actions/checkout@v4
-
-    - name: Configure AWS credentials
-      uses: aws-actions/configure-aws-credentials@v4
-      with:
-        aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
-        aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
-        aws-region: ${{ secrets.AWS_REGION }}
-
-    # ---------- Lambda ----------
-    - name: Package Lambda
-      run: |
-        cd aws/pipelines/ingestion
-        zip -r ingestion.zip lambda_handler.py
-        mv ingestion.zip ../../terraform/lambda/
-
-    # ---------- Docker / ECR ----------
-    - name: Login to ECR
-      run: |  
-        aws ecr get-login-password --region ${{ secrets.AWS_REGION }} \
-        | docker login --username AWS --password-stdin \
-        ${{ secrets.AWS_ACCOUNT_ID }}.dkr.ecr.${{ secrets.AWS_REGION }}.amazonaws.com
-
-    - name: Build & Push Docker image
-      run: |
-        IMAGE_URI=${{ secrets.AWS_ACCOUNT_ID }}.dkr.ecr.${{ secrets.AWS_REGION }}.amazonaws.com/${{ secrets.ECR_REPOSITORY }}:latest
-        docker build -t $IMAGE_URI aws/pipelines/transformation
-        docker push $IMAGE_URI
-
-    # ---------- Terraform ----------
-    - name: Terraform Init
-      run: |
-        cd aws/terraform
-        terraform init
-
-    - name: Terraform Apply
-      run: |
-        cd aws/terraform
-        terraform apply -auto-approve
+      - name: Checkout code
+        uses: actions/checkout@v4
+      
+      - name: Setup Terraform
+        uses: hashicorp/setup-terraform@v3
+        with:
+          terraform_version: 1.14.3
+      
+      - name: Configure AWS Credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region: us-east-1
+      
+      # Package Lambda
+      - name: Package Lambda Function
+        run: |
+          cd aws/pipelines/ingestion
+          zip -r ingestion.zip lambda_handler.py
+          mkdir -p ../../terraform/lambda
+          mv ingestion.zip ../../terraform/lambda/
+      
+      # Terraform
+      - name: Terraform Init
+        working-directory: aws/terraform
+        run: terraform init
+      
+      - name: Terraform Validate
+        working-directory: aws/terraform
+        run: terraform validate
+      
+      - name: Terraform Plan
+        working-directory: aws/terraform
+        run: terraform plan -var="project_name=multicloud-pipeline" -var="environment=dev" -out=tfplan
+        
+      - name: Terraform Apply
+        if: github.ref == 'refs/heads/main' && github.event_name == 'push'
+        working-directory: aws/terraform
+        run: terraform apply -auto-approve tfplan

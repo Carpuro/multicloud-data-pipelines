@@ -1,7 +1,7 @@
 # Data Lake Bucket
 resource "aws_s3_bucket" "data_lake" {
   bucket        = "${local.prefix}-data-lake"
-  force_destroy = var.environment != "prod"  # Only allow force destroy in non-prod environments
+  force_destroy = var.environment != "prod"
   
   tags = local.common_tags
 }
@@ -23,7 +23,7 @@ resource "aws_s3_bucket_server_side_encryption_configuration" "encryption" {
     apply_server_side_encryption_by_default {
       sse_algorithm = "AES256"
     }
-    bucket_key_enabled = true  # Reduce costs for large objects
+    bucket_key_enabled = true
   }
 }
 
@@ -37,7 +37,7 @@ resource "aws_s3_bucket_public_access_block" "data_lake" {
   restrict_public_buckets = true
 }
 
-# Lifecycle Policy (Ahorro de costos)
+# Lifecycle Policy
 resource "aws_s3_bucket_lifecycle_configuration" "data_lake" {
   count  = var.lifecycle_rules_enabled ? 1 : 0
   bucket = aws_s3_bucket.data_lake.id
@@ -45,19 +45,21 @@ resource "aws_s3_bucket_lifecycle_configuration" "data_lake" {
   rule {
     id     = "transition-old-data"
     status = "Enabled"
+    
+    filter {
+      prefix = ""
+    }
 
-    # Transición a almacenamiento económico
     transition {
       days          = 30
-      storage_class = "STANDARD_IA"  # Infrequent Access 
+      storage_class = "STANDARD_IA"
     }
 
     transition {
       days          = 90
-      storage_class = "GLACIER_IR"  # Glacier Instant Retrieval
+      storage_class = "GLACIER_IR"
     }
 
-    # Limpiar versiones antiguas
     noncurrent_version_transition {
       noncurrent_days = 30
       storage_class   = "STANDARD_IA"
@@ -67,14 +69,13 @@ resource "aws_s3_bucket_lifecycle_configuration" "data_lake" {
       noncurrent_days = 90
     }
 
-    # Limpiar uploads incompletos
     abort_incomplete_multipart_upload {
       days_after_initiation = 7
     }
   }
 }
 
-# Logging (Opcional pero recomendado)
+# Logging
 resource "aws_s3_bucket_logging" "data_lake" {
   bucket = aws_s3_bucket.data_lake.id
 
@@ -82,7 +83,7 @@ resource "aws_s3_bucket_logging" "data_lake" {
   target_prefix = "data-lake-logs/"
 }
 
-# Bucket para logs (Opcional)
+# Bucket para logs
 resource "aws_s3_bucket" "logs" {
   bucket        = "${local.prefix}-logs"
   force_destroy = true
@@ -92,6 +93,7 @@ resource "aws_s3_bucket" "logs" {
   })
 }
 
+# Folders
 resource "aws_s3_object" "folders" {
   for_each = toset([
     "raw/",
