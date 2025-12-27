@@ -94,3 +94,23 @@ resource "aws_iam_role_policy" "ecs_run_task" {
     ]
   })
 }
+
+resource "aws_iam_role_policy" "eventbridge_permissions" {
+  name = "${local.prefix}-eventbridge-permissions"
+  role = aws_iam_role.step_functions_role.id
+
+  policy = jsonencode({
+    Version = "2012-10-17"
+    Statement = [
+      {
+        Effect = "Allow"
+        Action = [
+          "events:PutTargets",
+          "events:PutRule",
+          "events:DescribeRule"
+        ]
+        Resource = "*"
+      }
+    ]
+  })
+}
