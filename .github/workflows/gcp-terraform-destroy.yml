@@ -1,0 +1,39 @@
+name: GCP Terraform Destroy
+
+on:
+  workflow_dispatch:
+
+jobs:
+  destroy:
+    name: Destroy GCP Infrastructure
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+      
+      - name: Setup Terraform
+        uses: hashicorp/setup-terraform@v3
+        with:
+          terraform_version: 1.14.3
+      
+      - name: Authenticate to Google Cloud
+        uses: google-github-actions/auth@v2
+        with:
+          credentials_json: ${{ secrets.GCP_SA_KEY }}
+      
+      - name: Set up Cloud SDK
+        uses: google-github-actions/setup-gcloud@v2
+      
+      - name: Terraform Init
+        working-directory: gcp/terraform
+        run: terraform init
+      
+      - name: Terraform Destroy
+        working-directory: gcp/terraform
+        run: |
+          terraform destroy -auto-approve \
+            -var="project_id=${{ secrets.GCP_PROJECT_ID }}" \
+            -var="project_name=multicloud-pipeline" \
+            -var="environment=dev" \
+            -var="location=${{ secrets.GCP_LOCATION }}"
